@@ -1,34 +1,42 @@
-PATHSSD=/shorthand/Neurodata/Spikegadgets/
-PATHHD=/home/thiago/Neurodata/Preprocessed/
-PATHSERVER=/media/thiagoatserver/Neurodata/Spikegadgets/
-PATHSERVERPP=/media/thiagoatserver/Neurodata/Preprocessed/
+PATHSSD=/shorthand/Neurodata/
+PATHHD=/home/thiago/Neurodata/
+PATHSERVER=/media/thiagoatserver/Neurodata/
 PATHWORKSPACE=/home/thiago/Documents/Trodes/Workspaces/TG020.trodesconf
 
-for animals in $(find ${PATHSSD} -maxdepth 1 -mindepth 1 -type d); do
-  animal=${animals##${PATHSSD}}
-  echo $animal
-  mkdir -p $PATHHD$animal
-  # get filename.rec
-  for sessions in $PATHSSD$animal/*.rec; do
-    #session=${sessions##${animals}}
-    #echo $session
-    filename=$(basename "$sessions")
-    extension="${filename##*.}"
-    filename="${filename%.*}"
-    echo $filename
+for animals in $(find ${PATHSSD}Spikegadgets -maxdepth 1 -mindepth 1 -type d); do
+  animal=${animals##${PATHSSD}Spikegadgets/}
+  #echo $animal
+  [ -d ${PATHHD}Spikegadgets/$animal ] || (mkdir -p ${PATHHD}Spikegadgets/$animal && echo "Creating folder ${PATHHD}Spikegadgets/$animal")
+
+  # PUT SESSION FILES IN A SESSION FOLDER
+  for sessions in ${PATHSSD}Spikegadgets/$animal/*.rec; do
+    session=$(basename "$sessions")
+    extension="${session##*.}"
+    session="${session%.*}"
+    [ "$session" == "*" ] && continue
+    echo "$session"
+
+    mkdir ${PATHSSD}Spikegadgets/$animal/$session && echo "Creating folder ${PATHSSD}Spikegadgets/$animal/$session"
+    mv ${PATHSSD}Spikegadgets/$animal/$session* ${PATHSSD}Spikegadgets/$animal/$session/ && echo "Moving session data to their own folder."
+  done
+
+  # PREPROCESSING (I.E. CONVERTING .REC TO .{DIO,LFP,MDA})
+  for sessions in $(find ${PATHSSD}Spikegadgets/$animal -maxdepth 1 -mindepth 1 -type d); do
+    session=${sessions##${PATHSSD}Spikegadgets/$animal/}
 
     # export DIO
-    [ -d $PATHHD$animal/$filename/$filename.DIO ] || ( echo "Exporting DIO" && exportdio -rec $sessions -outputdirectory $PATHHD$animal/$filename )
+    [ -d ${PATHHD}Preprocessed/$animal/$session/$session.DIO ] || ( echo "Exporting DIO for session $session" && exportdio -rec $sessions/$session.rec -outputdirectory ${PATHHD}Preprocessed/$animal/$session )
 
     # export LFP
-    [ -d $PATHHD$animal/$filename/$filename.LFP ] || ( echo "Exporting LFP" && exportLFP -rec $sessions -outputdirectory $PATHHD$animal/$filename )
+    [ -d ${PATHHD}Preprocessed/$animal/$session/$session.LFP ] || ( echo "Exporting LFP for session $session" && exportLFP -rec $sessions/$session.rec -outputdirectory ${PATHHD}Preprocessed/$animal/$session )
 
     # export MDA
-    [ -d $PATHHD$animal/$filename/$filename.mda ] || ( echo "Exporting MDA" && exportmda -rec $sessions -outputdirectory $PATHHD$animal/$filename -reconfig $PATHWORKSPACE )
+    [ -d ${PATHHD}Preprocessed/$animal/$session/$session.mda ] || ( echo "Exporting MDA for session $session" && exportmda -rec $sessions/$session.rec -outputdirectory ${PATHHD}Preprocessed/$animal/$session -reconfig $PATHWORKSPACE )
 
     # copy to server
-    [ -d $PATHSERVERPP$animal/$filename/$filename.DIO ] || ( echo "Copying DIO to server" && mkdir $PATHSERVERPP$animal/$filename/$filename.DIO/ -p && cp -r $PATHHD$animal/$filename/$filename.DIO/* $PATHSERVERPP$animal/$filename/$filename.DIO/ )
-    [ -d $PATHSERVERPP$animal/$filename/$filename.LFP ] || ( echo "Copying LFP to server" && mkdir $PATHSERVERPP$animal/$filename/$filename.LFP/ -p && cp -r $PATHHD$animal/$filename/$filename.LFP/* $PATHSERVERPP$animal/$filename/$filename.LFP/ )
-    [ -f $PATHSERVER$animal/$filename/$filename.rec ] || ( echo "Copying REC to server" && mkdir $PATHSERVER$animal/$filename/ -p && cp $sessions $PATHSERVER$animal/$filename/ )
+#    [ -d $PATHSERVERPP$animal/$session/$session.DIO ] || ( echo "Copying DIO to server" && mkdir $PATHSERVERPP$animal/$session/$session.DIO/ -p && cp -r $PATHHD$animal/$session/$session.DIO/* $PATHSERVERPP$animal/$session/$session.DIO/ )
+#    [ -d $PATHSERVERPP$animal/$session/$session.LFP ] || ( echo "Copying LFP to server" && mkdir $PATHSERVERPP$animal/$session/$session.LFP/ -p && cp -r $PATHHD$animal/$session/$session.LFP/* $PATHSERVERPP$animal/$session/$session.LFP/ )
+#    for sessionFiles in $PATHSSD$animal/*.rec
+#    [ -f $PATHSERVER$animal/$session/$session.rec ] || ( echo "Copying REC to server" && mkdir $PATHSERVER$animal/$session/ -p && cp $sessions $PATHSERVER$animal/$session/ )
   done
 done
