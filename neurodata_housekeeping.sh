@@ -34,9 +34,9 @@ for animals in $(find ${PATHSSD}Spikegadgets -maxdepth 1 -mindepth 1 -type d); d
     [ -d ${PATHHD}Preprocessed/$animal/$session/$session.mda ] || ( echo "Exporting MDA for session $session" && exportmda -rec $sessions/$session.rec -outputdirectory ${PATHHD}Preprocessed/$animal/$session -reconfig $PATHWORKSPACE )
 
     # copy to server
-#    [ -d $PATHSERVERPP$animal/$session/$session.DIO ] || ( echo "Copying DIO to server" && mkdir $PATHSERVERPP$animal/$session/$session.DIO/ -p && cp -r $PATHHD$animal/$session/$session.DIO/* $PATHSERVERPP$animal/$session/$session.DIO/ )
-#    [ -d $PATHSERVERPP$animal/$session/$session.LFP ] || ( echo "Copying LFP to server" && mkdir $PATHSERVERPP$animal/$session/$session.LFP/ -p && cp -r $PATHHD$animal/$session/$session.LFP/* $PATHSERVERPP$animal/$session/$session.LFP/ )
-#    for sessionFiles in $PATHSSD$animal/*.rec
-#    [ -f $PATHSERVER$animal/$session/$session.rec ] || ( echo "Copying REC to server" && mkdir $PATHSERVER$animal/$session/ -p && cp $sessions $PATHSERVER$animal/$session/ )
+   [ -d $PATHSERVERPP$animal/$session/$session.DIO ] || ( echo "Copying DIO to server" && mkdir $PATHSERVERPP$animal/$session/$session.DIO/ -p && cp -r $PATHHD$animal/$session/$session.DIO/* $PATHSERVERPP$animal/$session/$session.DIO/ )
+   [ -d $PATHSERVERPP$animal/$session/$session.LFP ] || ( echo "Copying LFP to server" && mkdir $PATHSERVERPP$animal/$session/$session.LFP/ -p && cp -r $PATHHD$animal/$session/$session.LFP/* $PATHSERVERPP$animal/$session/$session.LFP/ )
+   for sessionFiles in $PATHSSD$animal/*.rec
+   [ -f $PATHSERVER$animal/$session/$session.rec ] || ( echo "Copying REC to server" && mkdir $PATHSERVER$animal/$session/ -p && cp $sessions $PATHSERVER$animal/$session/ )
   done
 done
