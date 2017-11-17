@@ -5,15 +5,22 @@
 
 %%%%%PARAMS%%%%%%%%%%%%%
 Animals = {'TG020'};
-Dates = {'20170923'};%for multiple sessions, Animals must be osame length
+Dates = {'20170908','20170915','20170926','20171002'};
+%{'20170906','20170907','20170908','20170911','20170912','20170913','20170914',...
+    %'20170915','20170916','20170919','20170920','20170921','20170922','20170923',...
+    %'20170926','20170927','20170928','20170929','20171002'};%for multiple sessions, Animals must be osame length
+Animals=repmat(Animals,size(Dates));
 Tetrodes={[1:32]}; %[1:32] %which tetrodes to include, cell of same length as Animals and Dates
+Tetrodes=repmat(Tetrodes,size(Dates));
+% Tetrodes{13} = [7 8];
+% Tetrodes{14} = [7 8];
 Notify={'Thiago'}; %cell with names; names need to be associated with email in MailAlert.m
 ServerPathBase =  '/media/thiagoatserver/Neurodata/Spikegadgets';% path to original recording files
 % ServerPathBase =  '/home/thiago/Neurodata/Spikegadgets';% path to original recording files
 DataPathBase = '/home/thiago/Neurodata/Preprocessed'; % where to store big mda files. recommend HDD.
 SortingPathBase = '/shorthand/Neurodata/mountainsort/'; %where to store mountainlab sorting results (small(er) files). recommend SSD.
-ParamsPath = '/home/thiago/Documents/MATLAB/mountainsort_matlab_wrapper/params/params_minimal_TG020.json'; %default params file location
-% ParamsPath = '/home/thiago/Documents/MATLAB/mountainsort_matlab_wrapper/params/params_default_20170710.json'; %default params file location
+% ParamsPath = '/home/thiago/Documents/MATLAB/mountainsort_matlab_wrapper/params/params_minimal_TG020.json'; %default params file location
+ParamsPath = '/home/thiago/Documents/MATLAB/mountainsort_matlab_wrapper/params/params_default_20171107.json'; %default params file location
 CurationPath = '/home/thiago/Documents/MATLAB/mountainsort_matlab_wrapper/params/annotation.script'; %default curation script location
 Convert2MDA = false; %if set to false, uses converted mda file if present
 RunClustering = true; %if set to false, does not run clustering
@@ -34,11 +41,16 @@ RecSys = 'spikegadgets'; %recording system. either 'neuralynx' or 'spikegadgets'
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %CLUSTERING PIPELINE
 EXTRACTTIME = zeros(1,length(Animals)); SORTINGTIME=zeros(1,length(Animals)); MCLUSTCONVERTTIME=zeros(1,length(Animals));
-for session = 1:length(Animals)
+
+howlong = struct('extract',[],'sort',[],'mclustconvert',[],'date',[],'animal',[]);
+
+for session = 4%1:length(Animals)
     %
     animal = Animals{session};
+    howlong(session).animal = animal;
     date = Dates{session};
     tetrodes = Tetrodes{session};
+    howlong(session).date = date;
 
     %which leads to use
     %default: all 4
@@ -72,9 +84,9 @@ for session = 1:length(Animals)
         try
             Tetrode2MDALocal(Params);
         catch
-            MailAlert(Notify,'Hoodoo:SortingWrapperKron','Error:Tetrode2MDALocal.');
+            MailAlert(Notify,'Oxossi:SortingWrapperKron','Error:Tetrode2MDALocal.');
         end
-        EXTRACTTIME(session) = toc;
+        howlong(session).extract = duration([0 0 toc]);
     end
 
 
@@ -84,9 +96,9 @@ for session = 1:length(Animals)
         try
             ExecuteSortingKron(Params);
         catch
-            MailAlert(Notify,'Hoodoo:SortingWrapperKron','Error:ExecuteSortingKron.');
+            MailAlert(Notify,'Oxossi:SortingWrapperKron','Error:ExecuteSortingKron.');
         end
-        SORTINGTIME(session) = toc;
+        howlong(session).sort = duration([0 0 toc]);
     end
 
 
@@ -96,19 +108,17 @@ for session = 1:length(Animals)
         try
             ConvertToMClust(animal,date,tetrodes,DataPathBase,SortingPathBase);
         catch
-            MailAlert(Notify,'Hoodoo:SortingWrapperKron','Error:ConvertToMClust.');
+            MailAlert(Notify,'Oxossi:SortingWrapperKron','Error:ConvertToMClust.');
         end
-        MCLUSTCONVERTTIME(session) = toc;
+        howlong(session).mclustconvert = duration([0 0 toc]);
     end
 
 end%session
 
-TIME = sum((EXTRACTTIME + SORTINGTIME + MCLUSTCONVERTTIME))/60;
-fprintf('Overall Time: %2.1f min (session average %2.1f min).\n',TIME,TIME/length(Animals));
+% TIME = sum((EXTRACTTIME + SORTINGTIME + MCLUSTCONVERTTIME))/60;
+% fprintf('Overall Time: %2.1f min (session average %2.1f min).\n',TIME,TIME/length(Animals));
 
-save('EXTRACTTIME.mat','EXTRACTTIME');
-save('SORTINGTIME.mat','SORTINGTIME');
-save('MCLUSTCONVERTTIME.mat','MCLUSTCONVERTTIME');
+save('howlong.mat','howlong');
 
 %send slack notification
-MailAlert(Notify,'Hoodoo:SortingWrapperKron','Sorting Done.');
+MailAlert(Notify,'Oxossi:SortingWrapperKron','Sorting Done.');
